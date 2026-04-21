@@ -6,3 +6,4 @@ reports/
 data/golden_set.jsonl
 .agent/
 prompt_task_Multi-Judge_Consensus_Engine.md
+.venv
