@@ -13,7 +13,7 @@ Xây dựng hệ thống benchmark tự động để đánh giá chất lượn
 | **Vũ Đức Duy** | **Multi-Judge Consensus Engine** |
 | **Nhữ Gia Bách** | **Async Runner + Cost Report** |
 | **Trần Quang Quí** | **Retrieval Eval + Agent Integration** |
-| **Hoàng Vĩnh Giang** | **Regression Gate + Failure Analysis** *(làm cuối)* |
+| **Hoàng Vĩnh Giang** | **Regression Gate + Failure Analysis** *(làm cuối) * |
 
 ---
 
