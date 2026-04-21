@@ -25,8 +25,35 @@ class RetrievalEvaluator:
 
     async def evaluate_batch(self, dataset: List[Dict]) -> Dict:
         """
-        Chạy eval cho toàn bộ bộ dữ liệu.
-        Dataset cần có trường 'expected_retrieval_ids' và Agent trả về 'retrieved_ids'.
+        Tính Hit Rate và MRR thực sự cho toàn bộ dataset.
+        Mỗi case cần có 'ground_truth_doc_ids' và 'retrieved_doc_ids'.
         """
-        # Placeholder logic
-        return {"avg_hit_rate": 0.85, "avg_mrr": 0.72}
+        hit_rates = []
+        mrrs = []
+        per_case = []
+
+        for case in dataset:
+            expected_ids = case.get("ground_truth_doc_ids", [])
+            retrieved_ids = case.get("retrieved_doc_ids", [])
+
+            hit = self.calculate_hit_rate(expected_ids, retrieved_ids)
+            mrr = self.calculate_mrr(expected_ids, retrieved_ids)
+
+            hit_rates.append(hit)
+            mrrs.append(mrr)
+            per_case.append({
+                "question": case.get("question", ""),
+                "hit_rate": hit,
+                "mrr": mrr,
+                "retrieved_ids": retrieved_ids,
+                "expected_ids": expected_ids,
+            })
+
+        avg_hit_rate = sum(hit_rates) / len(hit_rates) if hit_rates else 0.0
+        avg_mrr = sum(mrrs) / len(mrrs) if mrrs else 0.0
+
+        return {
+            "avg_hit_rate": round(avg_hit_rate, 4),
+            "avg_mrr": round(avg_mrr, 4),
+            "per_case": per_case,
+        }
