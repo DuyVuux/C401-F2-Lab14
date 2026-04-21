@@ -5,44 +5,19 @@ Xây dựng hệ thống benchmark tự động để đánh giá chất lượn
 
 ---
 
-## 1. Thành viên & Điểm mạnh (từ Lab 13)
+## 1. Phân công nhiệm vụ
 
-| Thành viên | Điểm mạnh từ Lab 13 | Vai trò Lab 14 |
-| :--- | :--- | :--- |
-| **Trần Quang Quí** | Backend/Infra — Logging & PII (100/100) | **Regression Gate + Failure Analysis** |
-| **Đoàn Nam Sơn** | LLM Integration — Langfuse Tracing | **Golden Dataset & SDG** |
-| **Vũ Đức Duy** | Dashboards & Reporting | **Async Runner + Cost Report** |
-| **Hoàng Vĩnh Giang** | Load Testing & Incidents | **Retrieval Eval + Agent Integration** |
-| **Nhữ Gia Bách** | SLO/Alerts & Analysis | **Multi-Judge Consensus Engine** |
+| Thành viên | Vai trò Lab 14 |
+| :--- | :--- |
+| **Đoàn Nam Sơn** | **Golden Dataset & SDG** |
+| **Vũ Đức Duy** | **Multi-Judge Consensus Engine** |
+| **Nhữ Gia Bách** | **Async Runner + Cost Report** |
+| **Trần Quang Quí** | **Retrieval Eval + Agent Integration** |
+| **Hoàng Vĩnh Giang** | **Regression Gate + Failure Analysis** *(làm cuối)* |
 
 ---
 
 ## 2. Chi tiết nhiệm vụ từng thành viên
-
----
-
-### Trần Quang Quí — Regression Gate + Failure Analysis (10+5 điểm nhóm)
-**File chính:** `main.py` (phần regression), `analysis/failure_analysis.md`
-
-**Nhiệm vụ cụ thể:**
-- [ ] Implement logic Regression Gate thực sự trong `main.py`:
-  - `avg_score`: V2 phải >= V1 (không giảm)
-  - `hit_rate`: V2 phải >= V1 - 0.05 (cho phép giảm tối đa 5%)
-  - `p95_latency`: V2 phải <= V1 * 1.2 (không chậm hơn 20%)
-  - Output: `APPROVE` nếu tất cả pass, `BLOCK RELEASE` kèm lý do cụ thể
-- [ ] Lưu kết quả regression vào `reports/summary.json` với field `regression`:
-  ```json
-  "regression": {"v1_score": 3.5, "v2_score": 4.0, "delta": 0.5, "decision": "APPROVE"}
-  ```
-- [ ] Sau khi benchmark chạy xong → điền đầy đủ `analysis/failure_analysis.md`:
-  - Điền số thực (không để X/Y placeholder)
-  - Chọn 3 case tệ nhất, viết 5 Whys thực sự
-  - Đề xuất cải tiến + section "Giảm 30% chi phí"
-- [ ] Đảm bảo `python check_lab.py` pass hoàn toàn trước khi submit
-
-**Điều kiện làm được:** Cần Bách xong Multi-Judge + Giang xong Retrieval + Duy xong runner → chạy `python main.py` lấy kết quả thực.
-
-**Reflection cá nhân cần đề cập:** Tại sao cần Release Gate tự động; 5 Whys methodology; trade-off giữa Quality và Cost khi làm eval.
 
 ---
 
@@ -57,7 +32,6 @@ Xây dựng hệ thống benchmark tự động để đánh giá chất lượn
   - 5 cases adversarial: Prompt injection, Goal hijacking
   - 5 cases edge: Conflicting info, Ambiguous question
 - [ ] Mỗi case có đủ fields: `question`, `expected_answer`, `context`, `ground_truth_doc_ids`, `metadata.difficulty`, `metadata.type`
-- [ ] `ground_truth_doc_ids` là list doc ID để `RetrievalEvaluator` tính Hit Rate
 - [ ] Chạy `python data/synthetic_gen.py` → tạo `data/golden_set.jsonl` với ≥ 50 dòng
 - [ ] Kiểm tra: `python -c "import json; lines=[json.loads(l) for l in open('data/golden_set.jsonl')]; print(len(lines))"`
 
@@ -70,46 +44,7 @@ Xây dựng hệ thống benchmark tự động để đánh giá chất lượn
 
 ---
 
-### Vũ Đức Duy — Async Runner + Cost Report (10 điểm nhóm)
-**File chính:** `engine/runner.py`, `main.py` (phần cost tracking)
-
-**Nhiệm vụ cụ thể:**
-- [ ] Nâng cấp `BenchmarkRunner.run_all()`: thêm progress bar (tqdm), đo tổng thời gian
-- [ ] Thêm `Semaphore` vào runner để control concurrency thực sự (không chỉ batch_size)
-- [ ] Collect cost data từ mỗi `run_single_test()`: tổng hợp `total_tokens`, `total_cost_usd`
-- [ ] Thêm vào `reports/summary.json` các fields:
-  - `performance.total_time_seconds`
-  - `performance.avg_latency_ms`
-  - `performance.p95_latency_ms`
-  - `cost.total_tokens_used`
-  - `cost.total_cost_usd`
-  - `cost.cost_per_eval`
-- [ ] Viết section đề xuất: "Cách giảm 30% chi phí eval" trong `analysis/failure_analysis.md` (ví dụ: dùng Haiku thay GPT-4o cho initial scoring)
-- [ ] Đảm bảo 50 cases chạy xong **< 2 phút**
-
-**Reflection cá nhân cần đề cập:** Async vs. threading trong Python; Semaphore rate limiting; trade-off giữa tốc độ và chi phí.
-
----
-
-### Hoàng Vĩnh Giang — Retrieval Eval + Agent Integration (10 điểm nhóm)
-**File chính:** `engine/retrieval_eval.py`, `agent/main_agent.py`
-
-**Nhiệm vụ cụ thể:**
-- [ ] Nâng cấp `RetrievalEvaluator.evaluate_batch()`: thay placeholder bằng logic thực tế lấy `retrieved_ids` từ Agent response và so với `ground_truth_doc_ids` trong dataset
-- [ ] Agent `query()` phải trả về `retrieved_doc_ids` trong response (cần sửa `agent/main_agent.py`)
-- [ ] Tính Hit Rate và MRR thực sự cho toàn bộ 50 cases
-- [ ] Thêm kết quả vào từng `run_single_test()` result:
-  ```json
-  "retrieval": {"hit_rate": 0.8, "mrr": 0.65, "retrieved_ids": [...]}
-  ```
-- [ ] Viết agent thực tế (có thể tái dùng từ Lab trước) hoặc mock có `retrieved_doc_ids` hợp lệ
-- [ ] Chứng minh mối liên hệ: cases có hit_rate = 0 → judge_score thấp → Hallucination
-
-**Reflection cá nhân cần đề cập:** Hit Rate vs. MRR — khi nào dùng cái nào; tại sao Retrieval eval quan trọng hơn Generation eval; Hallucination từ retrieval fail.
-
----
-
-### Nhữ Gia Bách — Multi-Judge Consensus Engine (15 điểm nhóm)
+### Vũ Đức Duy — Multi-Judge Consensus Engine (15 điểm nhóm)
 **File chính:** `engine/llm_judge.py`
 
 **Nhiệm vụ cụ thể:**
@@ -136,27 +71,90 @@ Xây dựng hệ thống benchmark tự động để đánh giá chất lượn
 
 ---
 
+### Nhữ Gia Bách — Async Runner + Cost Report (10 điểm nhóm)
+**File chính:** `engine/runner.py`, `main.py` (phần cost tracking)
+
+**Nhiệm vụ cụ thể:**
+- [ ] Nâng cấp `BenchmarkRunner.run_all()`: thêm progress bar (tqdm), đo tổng thời gian
+- [ ] Thêm `Semaphore` vào runner để control concurrency thực sự (không chỉ batch_size)
+- [ ] Collect cost data từ mỗi `run_single_test()`: tổng hợp `total_tokens`, `total_cost_usd`
+- [ ] Thêm vào `reports/summary.json` các fields:
+  - `performance.total_time_seconds`
+  - `performance.avg_latency_ms`
+  - `performance.p95_latency_ms`
+  - `cost.total_tokens_used`
+  - `cost.total_cost_usd`
+  - `cost.cost_per_eval`
+- [ ] Đảm bảo 50 cases chạy xong **< 2 phút**
+
+**Reflection cá nhân cần đề cập:** Async vs. threading trong Python; Semaphore rate limiting; trade-off giữa tốc độ và chi phí.
+
+---
+
+### Trần Quang Quí — Retrieval Eval + Agent Integration (10 điểm nhóm)
+**File chính:** `engine/retrieval_eval.py`, `agent/main_agent.py`
+
+**Nhiệm vụ cụ thể:**
+- [ ] Sửa `agent/main_agent.py` để trả về `retrieved_doc_ids` trong response
+- [ ] Nâng cấp `RetrievalEvaluator.evaluate_batch()`: lấy `retrieved_ids` từ Agent response và so với `ground_truth_doc_ids` trong dataset
+- [ ] Tính Hit Rate và MRR thực sự cho toàn bộ 50 cases
+- [ ] Kết nối `RetrievalEvaluator` vào `BenchmarkRunner.run_single_test()`, mỗi kết quả có field:
+  ```json
+  "retrieval": {"hit_rate": 0.8, "mrr": 0.65, "retrieved_ids": [...]}
+  ```
+- [ ] Viết agent thực tế (có thể tái dùng từ Lab trước) hoặc mock có `retrieved_doc_ids` hợp lệ
+- [ ] Chứng minh mối liên hệ: cases có hit_rate = 0 → judge_score thấp → Hallucination
+
+**Reflection cá nhân cần đề cập:** Hit Rate vs. MRR — khi nào dùng cái nào; tại sao Retrieval eval quan trọng hơn Generation eval; Hallucination từ retrieval fail.
+
+---
+
+### Hoàng Vĩnh Giang — Regression Gate + Failure Analysis (10+5 điểm nhóm) *(làm cuối)*
+**File chính:** `main.py` (phần regression), `analysis/failure_analysis.md`
+
+**Nhiệm vụ cụ thể:**
+- [ ] Implement logic Regression Gate thực sự trong `main.py`:
+  - `avg_score`: V2 phải >= V1 (không giảm)
+  - `hit_rate`: V2 phải >= V1 - 0.05 (cho phép giảm tối đa 5%)
+  - `p95_latency`: V2 phải <= V1 * 1.2 (không chậm hơn 20%)
+  - Output: `APPROVE` nếu tất cả pass, `BLOCK RELEASE` kèm lý do cụ thể
+- [ ] Lưu kết quả regression vào `reports/summary.json` với field `regression`:
+  ```json
+  "regression": {"v1_score": 3.5, "v2_score": 4.0, "delta": 0.5, "decision": "APPROVE"}
+  ```
+- [ ] Sau khi benchmark chạy xong → điền đầy đủ `analysis/failure_analysis.md`:
+  - Điền số thực (không để X/Y placeholder)
+  - Chọn 3 case tệ nhất, viết 5 Whys thực sự
+  - Đề xuất cải tiến + section "Giảm 30% chi phí" (từ data của Bách)
+- [ ] Đảm bảo `python check_lab.py` pass hoàn toàn trước khi submit
+
+**Điều kiện làm được:** Cần Duy xong Multi-Judge + Quí xong Retrieval + Bách xong runner → chạy `python main.py` lấy kết quả thực.
+
+**Reflection cá nhân cần đề cập:** Tại sao cần Release Gate tự động; 5 Whys methodology; trade-off giữa Quality và Cost khi làm eval.
+
+---
+
 ## 3. Luồng làm việc & Dependencies
 
 ```
 Sơn (SDG) → tạo data/golden_set.jsonl
      ↓
-Giang (Agent) → implement agent trả về retrieved_doc_ids
+Quí (Agent) → implement agent trả về retrieved_doc_ids
      ↓
-Bách (Multi-Judge) + Giang (Retrieval Eval) → chạy song song
+Duy (Multi-Judge) + Quí (Retrieval Eval) → chạy song song
      ↓
-Duy (Async Runner) → kết nối tất cả, chạy benchmark
+Bách (Async Runner) → kết nối tất cả, chạy benchmark
      ↓
-Quí (Regression Gate) → chạy main.py, điền failure_analysis.md
+Giang (Regression Gate) → chạy main.py, điền failure_analysis.md
      ↓
 Tất cả → viết reflection cá nhân
 ```
 
 **Blocking dependencies:**
 - Sơn phải xong `golden_set.jsonl` trước → mọi người else cần file này để test
-- Giang phải có `retrieved_doc_ids` trong agent response → Bách và Retrieval Eval mới tích hợp được
-- Bách phải xong multi-judge → Duy mới collect cost data đầy đủ
-- **Quí làm cuối** — cần có kết quả benchmark thực từ Duy mới điền được failure_analysis.md
+- Quí phải có `retrieved_doc_ids` trong agent response → Duy và Retrieval Eval mới tích hợp được
+- Duy phải xong multi-judge → Bách mới collect cost data đầy đủ
+- **Giang làm cuối** — cần có kết quả benchmark thực từ Bách mới điền được failure_analysis.md
 
 ---
 
@@ -167,40 +165,40 @@ Tất cả → viết reflection cá nhân
 
 | Thành viên | Việc cần làm | Done khi |
 | :--- | :--- | :--- |
-| **Sơn** | Implement `generate_qa_from_text()` với LLM API, chạy ra 50+ cases | `python data/synthetic_gen.py` → `data/golden_set.jsonl` có ≥ 50 dòng |
-| **Giang** | Sửa `agent/main_agent.py` để trả về `retrieved_doc_ids`, implement `evaluate_batch()` thực sự | Agent query trả về `{"answer": ..., "retrieved_doc_ids": [...]}` |
-| **Bách** | Setup API keys, implement skeleton `evaluate_multi_judge()` với 2 real API calls | Function chạy không lỗi, trả về JSON đúng format |
-| **Duy** | Thêm `asyncio.Semaphore`, progress bar, đo latency vào runner | `run_all()` print progress và thời gian tổng |
-| **Quí** | Đọc kỹ rubric, chuẩn bị template `failure_analysis.md` + skeleton Regression Gate | `main.py` có 3 điều kiện Gate, chờ kết quả thực để điền |
+| **Sơn** | Implement `generate_qa_from_text()` với LLM API, chạy ra 50+ cases | `data/golden_set.jsonl` có ≥ 50 dòng |
+| **Quí** | Sửa `agent/main_agent.py` để trả về `retrieved_doc_ids` | Agent query trả về `{"answer": ..., "retrieved_doc_ids": [...]}` |
+| **Duy** | Setup API keys, implement skeleton `evaluate_multi_judge()` với 2 real API calls | Function chạy không lỗi, trả về JSON đúng format |
+| **Bách** | Thêm `asyncio.Semaphore`, progress bar, đo latency vào runner | `run_all()` print progress và thời gian tổng |
+| **Giang** | Đọc kỹ rubric, chuẩn bị skeleton Regression Gate trong `main.py` | `main.py` có 3 điều kiện Gate, chờ kết quả thực để điền |
 
 ### Sprint 2 — Integration [Tiếng 2-3, ~90 phút]
 **Mục tiêu:** Toàn pipeline chạy end-to-end
 
 | Thành viên | Việc cần làm | Done khi |
 | :--- | :--- | :--- |
-| **Bách** | Hoàn thiện conflict resolution (tiebreaker), position bias check, cost tracking | `evaluate_multi_judge()` xử lý được mọi trường hợp |
+| **Duy** | Hoàn thiện conflict resolution (tiebreaker), position bias check, cost tracking | `evaluate_multi_judge()` xử lý được mọi trường hợp |
 | **Sơn** | Review data quality, thêm 10 hard/adversarial cases nếu thiếu | Có ≥ 10 hard cases trong `golden_set.jsonl` |
-| **Giang** | Kết nối `RetrievalEvaluator` vào `BenchmarkRunner.run_single_test()` | Mỗi kết quả có field `retrieval.hit_rate` và `retrieval.mrr` |
-| **Duy** | Collect cost data từ multi-judge, tính p95 latency | `reports/summary.json` có đủ fields cost + performance |
-| **Quí** | Hoàn thiện Regression Gate logic, chạy thử `python main.py` | Hai file `reports/*.json` tồn tại và đúng format |
+| **Quí** | Kết nối `RetrievalEvaluator` vào `BenchmarkRunner.run_single_test()` | Mỗi kết quả có field `retrieval.hit_rate` và `retrieval.mrr` |
+| **Bách** | Collect cost data từ multi-judge, tính p95 latency | `reports/summary.json` có đủ fields cost + performance |
+| **Giang** | Hoàn thiện Regression Gate logic, chạy thử `python main.py` | Hai file `reports/*.json` tồn tại và đúng format |
 
 ### Sprint 3 — Benchmark & Analysis [Tiếng 3, ~60 phút]
 **Mục tiêu:** Có kết quả thực, phân tích được
 
 | Thành viên | Việc cần làm |
 | :--- | :--- |
-| **Quí** | Chạy full benchmark, điền số thực vào `analysis/failure_analysis.md`, viết 5 Whys cho 3 case tệ nhất |
-| **Giang** | Phân tích các cases hit_rate = 0, cung cấp cho Quí thông tin về Hallucination |
-| **Bách** | Tính agreement rate thực, liệt kê cases 2 judge bất đồng để Quí phân tích |
-| **Duy** | Cung cấp cost data thực cho Quí → viết section "Giảm 30% chi phí" |
+| **Giang** | Chạy full benchmark, điền số thực vào `analysis/failure_analysis.md`, viết 5 Whys cho 3 case tệ nhất |
+| **Quí** | Phân tích các cases hit_rate = 0, cung cấp cho Giang thông tin về Hallucination |
+| **Duy** | Tính agreement rate thực, liệt kê cases 2 judge bất đồng để Giang phân tích |
+| **Bách** | Cung cấp cost data thực cho Giang → section "Giảm 30% chi phí" |
 | **Sơn** | Review toàn bộ dataset, đảm bảo ground_truth_doc_ids mapping đúng |
 
 ### Sprint 4 — Polish & Submit [Tiếng 4, ~45 phút]
 **Mục tiêu:** Pass check_lab.py, xong reflections
 
-- [ ] **Quí:** Chạy `python check_lab.py` → sửa đến khi pass hoàn toàn, commit + push
+- [ ] **Giang:** Chạy `python check_lab.py` → sửa đến khi pass hoàn toàn, commit + push
 - [ ] **Cả nhóm:** Mỗi người viết `analysis/reflections/reflection_[Tên_SV].md`
-- [ ] **Quí:** Kiểm tra không có `.env` trong repo trước khi push
+- [ ] **Giang:** Kiểm tra không có `.env` trong repo trước khi push
 - [ ] **Sơn:** Đảm bảo `data/golden_set.jsonl` được add vào `.gitignore`
 
 ---
@@ -223,6 +221,6 @@ Tất cả → viết reflection cá nhân
 
 > ⚠️ **Nếu chỉ có 1 judge hoặc không có hit_rate trong summary.json → điểm nhóm tối đa 30/60.**
 
-- Quí phải đảm bảo `individual_scores` có **đúng 2 keys khác nhau** (e.g. `gpt-4o` và `claude-3-5-haiku`)
-- Giang phải đảm bảo `hit_rate` có trong mỗi benchmark result
-- Bách phải đảm bảo `metrics.hit_rate` và `metrics.agreement_rate` có trong `reports/summary.json`
+- Duy phải đảm bảo `individual_scores` có **đúng 2 keys khác nhau** (e.g. `gpt-4o` và `claude-3-5-haiku`)
+- Quí phải đảm bảo `hit_rate` có trong mỗi benchmark result
+- Giang phải đảm bảo `metrics.hit_rate` và `metrics.agreement_rate` có trong `reports/summary.json`
